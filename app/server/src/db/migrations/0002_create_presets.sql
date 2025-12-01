@@ -1,0 +1,11 @@
+CREATE TABLE preset_prompts (
+  id TEXT PRIMARY KEY,
+  preset_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT,
+  enabled INTEGER DEFAULT 1 NOT NULL,
+  icon TEXT,
+  prompt TEXT NOT NULL,
+  created_at INTEGER DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at INTEGER DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
