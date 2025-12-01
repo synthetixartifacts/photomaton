@@ -1,0 +1,96 @@
+name: photobooth-public
+
+services:
+  app:
+    image: photobooth-public:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}
+    container_name: photomaton-public
+    ports:
+      - "127.0.0.1:8082:8080"  # Only bind to localhost - Nginx will proxy
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - DATABASE_URL=file:/data/photomaton.db
+      - UPLOAD_DIR=/data/photos
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:*}
+      - IMAGE_PROVIDER=${IMAGE_PROVIDER:-mock}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+      - ENABLE_CAROUSEL_AUTO_REFRESH=${ENABLE_CAROUSEL_AUTO_REFRESH:-true}
+      - CAROUSEL_REFRESH_INTERVAL_MS=${CAROUSEL_REFRESH_INTERVAL_MS:-5000}
+      - DEFAULT_PRESET=${DEFAULT_PRESET:-toon-yellow}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      # Azure AD Authentication
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      # Google OAuth2 Authentication
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}
+      # Auth Configuration
+      - DOMAIN_EMAIL=${DOMAIN_EMAIL:-}
+      - REDIRECT_URI=${REDIRECT_URI:-}
+      - SESSION_MAX_AGE=${SESSION_MAX_AGE:-86400000}
+      - SESSION_NAME=${SESSION_NAME:-photomaton.sid}
+    volumes:
+      - ./data:/data
+      - ./certs:/certs:ro
+      - ./data/logs:/data/logs
+      - ./data/presets:/data/presets
+    user: root  # Run as root to avoid permission issues
+    restart: unless-stopped
+    healthcheck:
+      # Internal healthcheck uses HTTP (before HTTPS wrapper)
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development service (disabled for production)
+  # Uncomment and run with: docker compose --profile dev up
+  # dev:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: builder
+  #   container_name: photomaton-dev
+  #   ports:
+  #     - "8080:8080"
+  #     - "3000:3000"  # Vite dev server
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=8080
+  #     - DATABASE_URL=file:/data/photomaton.db
+  #     - UPLOAD_DIR=/data/photos
+  #     - LOG_LEVEL=debug
+  #     - CORS_ORIGIN=http://localhost:*
+  #     - IMAGE_PROVIDER=${IMAGE_PROVIDER:-mock}
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+  #   volumes:
+  #     - ./data:/data
+  #     - ./certs:/certs:ro
+  #     - ./data/logs:/data/logs
+  #     - ./data/presets:/data/presets
+  #     - ./app:/app/app:ro
+  #     - ./package.json:/app/package.json:ro
+  #     - ./tsconfig.base.json:/app/tsconfig.base.json:ro
+  #     - /app/node_modules
+  #     - /app/app/client/node_modules
+  #     - /app/app/server/node_modules
+  #     - /app/app/shared/node_modules
+  #   command: sh -c "npm run db:migrate --workspace=app/server && npm run dev --workspace=app/server"
+  #   profiles:
+  #     - dev
+
+# Local data directory mounted directly
+# Images will be stored in ./data/photos/

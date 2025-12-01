@@ -1,0 +1,38 @@
+{
+  "name": "photomaton",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "app/client",
+    "app/server",
+    "app/shared"
+  ],
+  "scripts": {
+    "dev": "docker compose up --build",
+    "build": "npm run build:shared && npm run build:client && npm run build:server",
+    "build:shared": "npm run build --workspace=app/shared",
+    "build:client": "npm run build --workspace=app/client",
+    "build:server": "npm run build --workspace=app/server",
+    "test": "npm run test:all",
+    "test:all": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck:all",
+    "typecheck:all": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint:all",
+    "lint:all": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean:all",
+    "clean:all": "rm -rf node_modules app/*/node_modules app/*/dist app/*/.turbo",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up",
+    "docker:down": "docker compose down",
+    "docker:clean": "docker compose down -v",
+    "docker:logs": "docker compose logs -f app"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.9.2"
+  }
+}
