@@ -1,0 +1,11 @@
+export { GeneralTab } from './GeneralTab';
+export { LimitsTab } from './LimitsTab';
+export { TimingsTab } from './TimingsTab';
+export { UITab } from './UITab';
+export { CameraTab } from './CameraTab';
+export { ProvidersTab } from './ProvidersTab';
+export { NewPresetsTab as PresetsTab } from './NewPresetsTab';
+export { PhotosTab } from './PhotosTab';
+export { ConfigTab } from './ConfigTab';
+export { TestingTab } from './TestingTab';
+export type { TabType } from './types';

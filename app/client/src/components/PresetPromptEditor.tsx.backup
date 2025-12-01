@@ -1,0 +1,307 @@
+import React, { useState, useEffect } from 'react';
+import type { PresetPrompt } from '../services/PresetService';
+
+interface PresetPromptEditorProps {
+  preset: PresetPrompt;
+  onSave: (preset: PresetPrompt) => void;
+  onCancel: () => void;
+}
+
+export const PresetPromptEditor: React.FC<PresetPromptEditorProps> = ({
+  preset,
+  onSave,
+  onCancel,
+}) => {
+  const [editedPreset, setEditedPreset] = useState<PresetPrompt>(preset);
+  const [useAdvancedMode, setUseAdvancedMode] = useState(!!preset.advancedPrompt);
+  const [activeTab, setActiveTab] = useState<'basic' | 'subject' | 'composition' | 'lighting' | 'style' | 'negative'>('basic');
+
+  // Initialize advanced prompt if switching to advanced mode
+  useEffect(() => {
+    if (useAdvancedMode && !editedPreset.advancedPrompt) {
+      setEditedPreset({
+        ...editedPreset,
+        advancedPrompt: {
+          basePrompt: editedPreset.prompt || '',
+          subjectPrompt: '',
+          compositionPrompt: '',
+          lightingPrompt: '',
+          stylePrompt: '',
+          negativePrompt: '',
+          promptStrength: 1.0,
+          preserveIdentity: true,
+          outputResolution: '1024x1024',
+        },
+      });
+    }
+  }, [useAdvancedMode, editedPreset]);
+
+  const handleBasicChange = (field: keyof PresetPrompt, value: any) => {
+    setEditedPreset({ ...editedPreset, [field]: value });
+  };
+
+  const handleAdvancedChange = (field: string, value: any) => {
+    if (!editedPreset.advancedPrompt) return;
+
+    setEditedPreset({
+      ...editedPreset,
+      advancedPrompt: {
+        ...editedPreset.advancedPrompt,
+        [field]: value,
+      },
+    });
+  };
+
+  const handleSave = () => {
+    // If in simple mode, remove advanced prompt
+    if (!useAdvancedMode) {
+      const { advancedPrompt, ...simplePreset } = editedPreset;
+      onSave(simplePreset as PresetPrompt);
+    } else {
+      onSave(editedPreset);
+    }
+  };
+
+  const promptSections = [
+    { id: 'basic', label: 'Base Prompt', field: 'basePrompt',
+      placeholder: 'Main transformation description following Nano Banana narrative style...',
+      help: 'Describe the overall transformation as a narrative, not just keywords.' },
+    { id: 'subject', label: 'Subject', field: 'subjectPrompt',
+      placeholder: 'What must be in-frame, character details, identity preservation...',
+      help: 'Define what elements of the subject to transform and what to preserve.' },
+    { id: 'composition', label: 'Composition', field: 'compositionPrompt',
+      placeholder: 'Framing, background, depth of field, aspect ratio...',
+      help: 'Specify composition, camera angles, and spatial arrangement.' },
+    { id: 'lighting', label: 'Lighting', field: 'lightingPrompt',
+      placeholder: 'Time of day, lighting style, shadows, color temperature...',
+      help: 'Define lighting conditions, mood, and atmospheric effects.' },
+    { id: 'style', label: 'Style', field: 'stylePrompt',
+      placeholder: 'Visual style, art movements, materials, color palette...',
+      help: 'Reference specific artistic styles, techniques, and visual aesthetics.' },
+    { id: 'negative', label: 'Negative', field: 'negativePrompt',
+      placeholder: 'Elements to avoid, unwanted features, quality issues...',
+      help: 'List what should NOT appear in the transformed image.' },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">{editedPreset.icon}</span>
+              <h2 className="text-xl font-bold text-white">Edit Preset: {editedPreset.name}</h2>
+            </div>
+            <button
+              onClick={onCancel}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="bg-gray-800 px-6 py-3 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center space-x-2 text-gray-300">
+                <input
+                  type="radio"
+                  checked={!useAdvancedMode}
+                  onChange={() => setUseAdvancedMode(false)}
+                  className="text-blue-500"
+                />
+                <span>Simple Mode</span>
+              </label>
+              <label className="flex items-center space-x-2 text-gray-300">
+                <input
+                  type="radio"
+                  checked={useAdvancedMode}
+                  onChange={() => setUseAdvancedMode(true)}
+                  className="text-blue-500"
+                />
+                <span>Advanced Mode (Nano Banana Optimized)</span>
+              </label>
+            </div>
+            {useAdvancedMode && (
+              <div className="text-xs text-gray-400">
+                Following Nano Banana best practices for structured prompts
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Basic Info */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">Name</label>
+              <input
+                type="text"
+                value={editedPreset.name}
+                onChange={(e) => handleBasicChange('name', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">Icon</label>
+              <input
+                type="text"
+                value={editedPreset.icon || ''}
+                onChange={(e) => handleBasicChange('icon', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                placeholder="Enter emoji"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-gray-400 text-sm mb-2">Description</label>
+              <input
+                type="text"
+                value={editedPreset.description}
+                onChange={(e) => handleBasicChange('description', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Simple Mode */}
+          {!useAdvancedMode && (
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">
+                Simple Prompt
+                <span className="ml-2 text-xs text-gray-500">
+                  (Basic transformation instruction)
+                </span>
+              </label>
+              <textarea
+                value={editedPreset.prompt}
+                onChange={(e) => handleBasicChange('prompt', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none font-mono text-sm"
+                rows={6}
+                placeholder="Enter transformation prompt..."
+              />
+            </div>
+          )}
+
+          {/* Advanced Mode */}
+          {useAdvancedMode && editedPreset.advancedPrompt && (
+            <div>
+              {/* Tabs */}
+              <div className="flex space-x-1 mb-4 border-b border-gray-700">
+                {promptSections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveTab(section.id as any)}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      activeTab === section.id
+                        ? 'text-blue-400 border-b-2 border-blue-400'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              {promptSections.map((section) => {
+                if (activeTab !== section.id) return null;
+
+                return (
+                  <div key={section.id} className="space-y-4">
+                    <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-800/30">
+                      <p className="text-sm text-blue-300">
+                        <strong>Best Practice:</strong> {section.help}
+                      </p>
+                    </div>
+
+                    <textarea
+                      value={(editedPreset.advancedPrompt as any)[section.field] || ''}
+                      onChange={(e) => handleAdvancedChange(section.field, e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none font-mono text-sm"
+                      rows={8}
+                      placeholder={section.placeholder}
+                    />
+                  </div>
+                );
+              })}
+
+              {/* Advanced Settings */}
+              {activeTab === 'basic' && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">
+                      Prompt Strength
+                      <span className="ml-2 text-xs text-gray-500">(0.5-2.0)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0.5"
+                      max="2.0"
+                      step="0.1"
+                      value={editedPreset.advancedPrompt.promptStrength}
+                      onChange={(e) => handleAdvancedChange('promptStrength', parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Output Resolution</label>
+                    <select
+                      value={editedPreset.advancedPrompt.outputResolution}
+                      onChange={(e) => handleAdvancedChange('outputResolution', e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="512x512">512x512</option>
+                      <option value="768x768">768x768</option>
+                      <option value="1024x1024">1024x1024</option>
+                      <option value="1536x1536">1536x1536</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center">
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editedPreset.advancedPrompt.preserveIdentity}
+                        onChange={(e) => handleAdvancedChange('preserveIdentity', e.target.checked)}
+                        className="text-blue-500 rounded"
+                      />
+                      <span>Preserve Subject Identity</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-gray-800 px-6 py-4 border-t border-gray-700 flex justify-between items-center">
+          <div className="text-xs text-gray-400">
+            {useAdvancedMode
+              ? 'Advanced mode uses structured prompts optimized for Nano Banana'
+              : 'Simple mode uses basic transformation prompts'}
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Save Preset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
